@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+</head>
+
+<body>
+  <p id="p1">Problem 1a. mark- county districts of the continental united states
+    <br>
+    visual channels- color hues indicate quantity of precipitation <br>
+    1b.  mark- dot visual channels- color hue indicates type , varying the horizontal
+    and vertical positions of the dots
+
+
+</p>
+
+  <p id="p2"> Problem 2
+    a) regex; no
+    b) string; yes
+    c) unicode;no
+    d) list; no
+    e) map; no
+    f) object; yes
+    g) number; yes
+    h) int; no
+    i) boolean; yes
+    j) float; no
+    k) null; no
+    l) function; yes
+  </p>
+  <script>
+
+    console.log(typeof(Math.sin));
+    console.log(typeof("dog"));
+    console.log(typeof(5));
+    console.log(typeof(true));
+
+  </script>
+
+  <p id="p3">
+    first one has error because there are quotes inside the JSON string, which violates the convention. <br>
+    second one has errors: comments cannot be placed in json strings and must be removed. There cannot be multiple options in the JSON string, there can only be one option.
+    Also, in order for the json string to hold a number, the quotation marks around the class name must be removed and the abbreviations(like INFO) must also be removed   <br>
+    for the third one the error is that
+    lists in javascript are seperated by commas not semicolons
+    <br>
+    for the fourth one, there is a semi colon that must be replaced instead with a colon
+  <script>
+
+    JSON.parse('{netid: \'jmr395\'}');
+    JSON.parse('{"number":3300}');
+    JSON.parse('{3,4.3,null}');
+    JSON.parse('[ { "name": "DDWA", "number": 3300 } { "name": "Java", "number": 2110 } { "name":"Python", "number": 1110 }');
+
+//  console.log(JSON.parse('{3; 4.3; null }'));
+
+  </script>
+</p>
+
+  <p id="p4"> Problem 4 <br>
+
+  <script>
+
+    var j=
+
+    [
+      {
+        "a":100,
+        "b":true,
+        "c":["alpha", "bravo"]
+      },
+      {
+        "first":10,
+        "second":true,
+        "third":["one", "two"]
+      },
+      {
+        "x":1,
+        "y":false,
+        "z":["string1", "string2"]
+      }
+    ]
+    ;
+    //m=JSON.parse(j)
+    //console.log(m);
+    console.log(JSON.stringify(j));
+
+
+
+    </script>
+
+
+  </p>
+
+  <p id="p5">
+    The policy on late work is that late work will not be accepted with no excpetions.
+    However, the two lowest homeworks will be dropped. It is also possible for a file to be accepted if there is an unalterabel timestamp that shows it was completed in time,
+    like the time an email attachment was sent or a github commit.
+
+  </p>
+
+
+
+</body>

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="https://d3js.org/d3.v5.min.js"></script>  
+ <script src="https://d3js.org/topojson.v2.min.js"></script>
+ <style>
+    .country {stroke: none;
+     fill:lightgrey;
+    
+    
+    
+            }
+    .outline{
+        stroke: black;
+        stroke-width: 1px;
+        fill: none;
+    }  
+    .graticule {
+        fill:none;
+        stroke: lightgrey;    
+        
+    }    
+    .district {stroke: white;
+        stroke-width: 1px;
+     fill:none;
+    
+    
+    
+            }
+    
+    </style>
+</head>
+
+ <body>
+<p id=mercatortext> 
+An advantage of the mercator projection is that since the projection is rectangular, it is easier to plot point and draw trajectories.
+
+
+A disadvantage of this type of projection is that it distorts the scale of landmasses near the poles. That is, Antartica and Greenland are 
+distorted to be bigger than they are.
+This would be suited for the use of visually showing one's journey through the world. Drawing lines around the earth would be very easy and accurate 
+compared to other projections.
+
+</p>
+<p>
+
+A major advantage of the Equal Earth projection is that it looks very visually appealing, the continents look very well proportioned.
+A disadvantage is that while the map may look the nicest, it will not be as good as accurate as a whole like the mercator projecitons or as accurate 
+regionally like the conic equal area.
+A cases in which this projection would be best is ones where the measurments themselves dont matter, instead the focus is on using the 
+map to present information on countries. An example of this would be a map coloring countries according to what language they speak.
+
+</p>
+
+
+<p>
+An advantage of conic equal area it is  very accurate map in terms of east to west. 
+A disadvantage of this projection is that since the map is very distorted when looking at the earth as a whole, it is not very 
+practical or accurate when viewing the entire world.
+
+A good case in which to use this would be to highlight locations that are very far apart in terms of width. An example of this would be 
+a map showing the major cities of Russia, since most of them are either on the far west or on its southern pacific coast.
+
+
+</p>
+
+
+
+
+
+    <svg id="mercator" height="400" width="600" style="background: #445; margin-top:50px" >
+
+    </svg>
+
+    <svg id="equalEarth" height="400" width="600" style="background: #445; margin-top:50px" >
+
+        </svg>
+
+    <svg id="conicEqualArea" height="400" width="600" style="background: #445; margin-top:50px" >
+
+            </svg>
+        
+    <svg id="ny" height="700" width="800" style="background: #445; margin-top:50px" >
+
+                </svg>
+    <script>
+         console.log("pie");
+
+    const svg = d3.select("#mercator");
+    const width = svg.attr("width");
+    const height = svg.attr("height");
+    const margin = { top: 20, right: 20, bottom: 20, left:20};
+    const mapWidth = width - margin.left - margin.right;
+    const mapHeight = height - margin.top - margin.bottom;
+    const map = svg.append("g")
+                  .attr("transform","translate("+margin.left+","+margin.top+")");
+
+    const svg2 = d3.select("#equalEarth");
+    const width2 = svg2.attr("width");
+    const height2 = svg2.attr("height");
+    const margin2 = { top: 20, right: 20, bottom: 20, left:20};
+    const mapWidth2 = width2 - margin2.left - margin2.right;
+    const mapHeight2 = height2 - margin2.top - margin2.bottom;
+    const map2 = svg2.append("g")
+                  .attr("transform","translate("+margin2.left+","+margin2.top+")");
+                  
+
+    const svg3 = d3.select("#conicEqualArea");
+    const width3 = svg3.attr("width");
+    const height3 = svg3.attr("height");
+    const margin3 = { top: 20, right: 20, bottom: 20, left:20};
+    const mapWidth3 = width3 - margin3.left - margin3.right;
+    const mapHeight3 = height3 - margin3.top - margin3.bottom;
+    const map3 = svg3.append("g")
+                  .attr("transform","translate("+margin3.left+","+margin3.top+")");
+
+    const svg4 = d3.select("#ny");
+    const width4 = svg4.attr("width");
+    const height4 = svg4.attr("height");
+    const margin4 = { top: 20, right: 20, bottom: 20, left:20};
+    const mapWidth4 = width4 - margin4.left - margin4.right;
+    const mapHeight4 = height4 - margin4.top - margin4.bottom;
+    const map4 = svg4.append("g")
+                  .attr("transform","translate("+margin4.left+","+margin4.top+")");
+             
+
+
+
+    console.log("pie");
+    const requestData = async () => {
+        const world=  await d3.json("world_110m.json");
+        
+        console.log(world);
+        var countries = topojson.feature(world, world.objects.countries);
+        console.log("pie");
+        var countriesMesh = topojson.mesh(world, world.objects.countries);
+        //var projection = d3.geo.Mercator().fitSize([mapWidth, mapHeight], countries);
+        var projection = d3.geoMercator()
+  .fitSize([mapWidth,mapHeight],countries);
+        var path = d3.geoPath().projection(projection);
+
+        const nyd=  await d3.json("new_york_districts.json ");
+        var districts = topojson.feature(nyd, nyd.objects.districts);
+        var projectionny = d3.geoMercator()
+  .fitSize([mapWidth4,mapHeight4],districts);
+        var pathny = d3.geoPath().projection(projectionny);
+        //const electoralcolorscale=  d3.scale.linear().domain([30,50,70]).range(['blue','#D3D3D3', 'red']);
+        var myScale = d3.scaleLinear()
+  .domain([30, 50,70])
+  .range(['red', '#D3D3D3', 'blue'])
+  .interpolate(d3.interpolateHcl)
+  .clamp(true);
+
+         //d => myscale(d.properties.percent_clinton);
+
+
+        map.append("path") // Add a single path to your SVG canvas
+        .attr( "class", "graticule" )
+ // with the class "graticule" to use our CSS style
+        .attr( "d", path( d3.geoGraticule10() ) );
+ // and call your path generator on the output of d3’s
+ // built-in d3.geoGraticule10 function to set "d"
+        map.selectAll("path").data(countries.features)
+        .enter()
+        .append("path")
+        .attr("class","country")
+        .attr("d", path);
+        // .attr("note", d => d.id);  // We used this for debugging
+        map.append("path")
+      .datum(countriesMesh)
+      .attr("class","outline")
+      .attr("d", path);
+
+
+    
+        
+      //  var countries2 = topojson.feature(world, world.objects.countries2);
+        console.log("pie");
+      //  var countriesMesh2 = topojson.mesh(world2, world2.objects.countries2);
+        //var projection = d3.geo.Mercator().fitSize([mapWidth, mapHeight], countries);
+        var projection2 = d3.geoEqualEarth()
+  .fitSize([mapWidth2,mapHeight2],countries);
+        var path2 = d3.geoPath().projection(projection2);
+        map2.append("path") // Add a single path to your SVG canvas
+        .attr( "class", "graticule" )
+ // with the class "graticule" to use our CSS style
+        .attr( "d", path2( d3.geoGraticule10() ) );
+ // and call your path generator on the output of d3’s
+ // built-in d3.geoGraticule10 function to set "d"
+        map2.selectAll("path").data(countries.features)
+        .enter()
+        .append("path")
+        .attr("class","country")
+        .attr("d", path2);
+        // .attr("note", d => d.id);  // We used this for debugging
+        map2.append("path")
+      .datum(countriesMesh)
+      .attr("class","outline")
+      .attr("d", path2);
+
+     var projection3 = d3.geoConicEqualArea()
+  .fitSize([mapWidth3,mapHeight3],countries);
+        var path3 = d3.geoPath().projection(projection3);
+        map3.append("path") // Add a single path to your SVG canvas
+        .attr( "class", "graticule" )
+ // with the class "graticule" to use our CSS style
+        .attr( "d", path3( d3.geoGraticule10() ) );
+ // and call your path generator on the output of d3’s
+ // built-in d3.geoGraticule10 function to set "d"
+        map3.selectAll("path").data(countries.features)
+        .enter()
+        .append("path")
+        .attr("class","country")
+        .attr("d", path3);
+        // .attr("note", d => d.id);  // We used this for debugging
+        map3.append("path")
+      .datum(countriesMesh)
+      .attr("class","outline")
+      .attr("d", path3);
+
+
+
+  //  map4.append("path") // Add a single path to your SVG canvas
+    //    .attr( "class", "graticule" )
+ // with the class "graticule" to use our CSS style
+     //   .attr( "d", pathny( d3.geoGraticule10() ) );
+ // and call your path generator on the output of d3’s
+ // built-in d3.geoGraticule10 function to set "d"
+        map4.selectAll("path").data(districts.features)
+        .enter()
+        .append("path")
+        .attr("class","district")
+        .attr("d", pathny);
+        // .attr("note", d => d.id);  // We used this for debugging
+    //    map.append("path")
+    //  .datum(countriesMesh)
+    //  .attr("class","outline")
+    //  .attr("d", pathny);
+    map4.selectAll(".district")
+        .style("fill", d => myScale( (d.properties.percent_clinton) ));
+
+
+
+
+      };
+    requestData();
+
+
+
+    
+
+    console.log("pie");
+  //  const requestData2 = async () => {
+        
+
+
+
+
+  //    };
+  //  requestData2();
+
+
+
+    </script>
+
+
+
+
+
+
+
+
+
+
+ </body>

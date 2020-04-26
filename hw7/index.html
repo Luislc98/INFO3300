@@ -1,0 +1,128 @@
+<html>
+<head>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.14.2/highlight.min.js"></script>
+<script src="https://d3js.org/d3.v5.min.js"></script>
+
+</head>
+
+
+<body>
+
+<p> Problem 1 </p>
+
+<canvas width="320" height="320" class="model"></canvas>
+<input id="slider" type="range" step="1" value="75" max="150"  min="0" value="75" style="width:150px"></input>
+<script>
+var canvas = document.querySelector("canvas.model");
+var context = canvas.getContext("2d");
+var image = context.getImageData(0, 0, canvas.width, canvas.height);
+var pixels = image.data;
+var scale = d3.scaleLinear()
+        .domain([0, canvas.width])
+        .range([-160,160]);
+function rgbAtLocation(lum, x, y) {
+    lab = d3.lab(lum, scale(x), scale(y));
+    rgb= d3.rgb(lab);
+return rgb;
+}
+function fillCanvas(lum)
+{
+    for(let x = 0; x < 320; x++) {
+      for(let y = 0; y < 320; y++) {
+        rgbspot= rgbAtLocation(lum,x,y);
+        pixels[4*(y*320 + x) + 0] = rgbspot.r  // use the color lookup table to map grid cells to color values
+        // green
+        pixels[4*(y*320 + x) + 1] = rgbspot.g   // use the color lookup table to map grid cells to color values
+        // blue
+        pixels[4*(y*320 + x) + 2] = rgbspot.b   // use the color lookup table to map grid cells to color values
+        // aalpha
+        pixels[4*(y*320 + x) + 3] = 255; // we want fully opaque cells
+        
+      }
+    }
+    context.putImageData(image, 0, 0);
+}
+
+d3.select("#slider").on("input", function() {
+        fillCanvas(this.value)
+    });
+
+</script>
+
+<style>
+
+  .link {
+      stroke: black;
+      stroke-width: 1px;
+      opacity: 1.0;
+  }
+  </style>
+
+<p> Problem 2</p>
+<svg width="800" height="400" id="network"></svg>
+
+<script>
+
+network=d3.select("#network");
+network.append("g");
+const width= 800;
+const height= 400;
+const getData = async () => {
+  let colorScale = d3.scaleOrdinal()
+  .domain(["Dem","Rep","Ind"])
+  .range(["blue","red","yellow"]);
+  let edges = await d3.csv("senate.109.rollcall.edges.csv");
+  let nodes = await d3.csv("senate.109.rollcall.nodes.csv");     
+  var sim = d3.forceSimulation(nodes)
+    .force("link", d3.forceLink(edges).id(c => c.icpsr))
+    .force("charge", d3.forceManyBody().strength(-60))
+    .force("y", d3.forceY(height/2.0).strength(0.1)) 
+    .force('x', d3.forceX((c) => {
+      if (c.party === "Dem") return width * .25;
+      else if (c.party === "Rep") return width * .75;
+      else return width * .50;
+      }).strength(.1))
+        
+    const render = () => {
+        var edge = network.select("g").selectAll(".link")
+          .data(edges)
+
+          edge.enter()
+            .append("line")
+            .merge(edge)
+            .attr("class","link")
+            .attr('x1', d => d.source.x)
+            .attr('x2', d => d.target.x)
+            .attr('y1', d => d.source.y)
+            .attr('y2', d => d.target.y)  
+
+        var node = network.select("g").selectAll("circle")
+          .data(nodes)
+
+          node.enter()
+            .append("circle")
+            .merge(node)
+            .style('fill', d => colorScale(d.party))
+            .attr('cy', d => d.y)
+            .attr('cx', d => d.x)
+            .attr('r', 4)
+
+
+      }
+        sim.on('tick', () => render())
+
+      }
+      getData();
+
+</script>
+
+
+
+</body>
+
+
+
+
+
+</html>

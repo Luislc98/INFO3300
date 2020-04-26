@@ -1,0 +1,151 @@
+<html><head>
+
+  <link href="https://fonts.googleapis.com/css?family=Lato:400,700|Raleway:400,700" rel="stylesheet">
+
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+
+
+</head>
+<body>
+
+
+
+  <script id="notes">
+
+    // 2
+    var anscombe = [[10,9.14],[8,8.14],[13,8.74],[9,8.77],[11,9.26],[14,8.1],[6,6.13],[4,3.1],[12,9.13],[7,7.26],[5,4.74]]
+    let width = 300;
+    let height = 200;
+    let svg = d3.select("body").append("svg").attr("width", width).attr("height", height);
+    let margin = { top: 8, right: 8, bottom: 10, left:14};
+    let chartWidth = width - margin.left - margin.right;
+    let chartHeight = height - margin.top - margin.bottom;
+    let chart = svg.append("g")
+                    .attr("transform","translate("+margin.left+","+margin.top+")");
+
+    let xScale = d3.scaleLinear().domain([0,15]).range([0,chartWidth]);
+    let yScale = d3.scaleLinear().domain([10,0]).range([0,chartHeight]);
+    let xAxis = d3.axisBottom(xScale).ticks(3).tickSize(0);
+    let yAxis = d3.axisLeft(yScale).ticks(2).tickSize(0);
+    svg.append("g")
+            .attr("transform","translate("+margin.left+","+(margin.top+chartHeight)+")")
+            .call(xAxis);
+    svg.append("g")
+            .attr("transform","translate("+margin.left+","+margin.top+")")
+            .call(yAxis);
+    svg.selectAll(".domain").attr("stroke","none"); // hack to hide axis lines
+
+    for (let i=0; i<=10; i++) {
+      chart.append("line").attr("x1",0).attr("x2",chartWidth).attr("y1",yScale(i)).attr("y2",yScale(i)).attr("stroke","grey")
+    }
+    for (let i=0; i<=15; i++) {
+      chart.append("line").attr("x1",xScale(i)).attr("x2",xScale(i)).attr("y1",0).attr("y2",chartHeight).attr("stroke","grey")
+    }
+
+    anscombe.forEach( d => {
+
+      chart.append("circle")
+        .attr("cx",xScale(d[0]))
+        .attr("cy",yScale(d[1]))
+        .attr("r",5)
+        .attr("fill","#00A")
+        .on("click", function() {
+          d3.select(this).attr("fill","#A00");
+        });
+
+    });
+
+
+    // 3
+    var diamondData;
+
+    let svg1 = d3.select("body").append("svg").attr("width", 400).attr("height", 400);
+    let svg2 = d3.select("body").append("svg").attr("width", 400).attr("height", 400);
+    let svg3 = d3.select("body").append("svg").attr("width", 400).attr("height", 400);
+
+    // A
+    d3.json("./diamonds.json").then(function(data) {
+
+      diamondData = data;
+
+      // B
+      let maxCarat = d3.max(data, function(d) {return d["carat"]; });
+      let maxPrice = d3.max(data, function(d) {return d["price"]; });
+      let xScale = d3.scaleLinear()
+          .domain([0, maxCarat])
+          .range([0, svg1.attr("width")-5]);
+      let yScale = d3.scaleLinear()
+          .domain([0, maxPrice])
+          .range([0, svg1.attr("height")-5]);
+
+      for (let i=0; i<maxCarat; i++) {
+        svg1.append("line").attr("x1", xScale(i)).attr("x2", xScale(i)).attr("y1", "0").attr("y2", svg1.attr("height")).style("stroke", "lightgrey");
+      }
+      for (let i=0; i<maxPrice; i=i+1000) {
+        svg1.append("line").attr("x1", 0).attr("x2", svg1.attr("width")).attr("y1", svg1.attr("height")-yScale(i)).attr("y2", svg1.attr("height")-yScale(i)).style("stroke", "lightgrey");
+      }
+
+      // C
+      diamondData.forEach(function(d, i) {
+        let c = Math.floor(xScale(d["carat"]));
+        let p = svg1.attr("height")-Math.floor(yScale(d["price"]));
+        svg1.append("circle").attr("cx", c).attr("cy", p).attr("r", 3).attr("opacity", 0.3).style("fill", "darkblue");
+      });
+
+      console.log(d3.max(data, function(d) {return d["carat"]; }));
+      console.log(d3.max(data, function(d) {return d["price"]; }));
+
+
+      // D
+
+      let maxColor = d3.max(data, function(d) {return d["color_rating"]; });
+      let xScale2 = d3.scaleLinear()
+          .domain([0, maxColor+1])
+          .range([0,400]);
+      let yScale2 = d3.scaleLinear()
+          .domain([0, maxPrice])
+          .range([0, svg2.attr("height")-5]);
+
+      for (let i=0; i<maxColor; i++) {
+        svg2.append("line").attr("x1", xScale2(i)).attr("x2", xScale2(i)).attr("y1", "0").attr("y2", svg2.attr("height")).style("stroke", "lightgrey");
+      }
+      for (let i=0; i<maxPrice; i=i+1000) {
+        svg2.append("line").attr("x1", 0).attr("x2", svg2.attr("width")).attr("y1", svg2.attr("height")-yScale2(i)).attr("y2", svg2.attr("height")-yScale2(i)).style("stroke", "lightgrey");
+      }
+
+      diamondData.forEach(function(d, i) {
+        let c = Math.floor(xScale2(d["color_rating"]) + Math.random()*5 );
+        let p = Math.floor(svg2.attr("height")-yScale2(d["price"]) + Math.random()*6 - 3 );
+        svg2.append("circle").attr("cx", c).attr("cy", p).attr("r", 3).attr("opacity", 0.3).style("fill", "darkgreen");
+      });
+
+      // E
+
+      let maxDPC = d3.max(data, function(d) {return d["price"] / d["carat"]; });
+      let xScale3 = d3.scaleLinear()
+          .domain([0, maxColor+1])
+          .range([0, 400]);
+      let yScale3 = d3.scaleLinear()
+          .domain([0, maxDPC])
+          .range([0, svg2.attr("height")-5]);
+
+      for (let i=1; i<maxColor; i++) {
+        svg3.append("line").attr("x1", xScale3(i)).attr("x2", xScale3(i)).attr("y1", "0").attr("y2", svg3.attr("height")).style("stroke", "lightgrey");
+      }
+      for (let i=0; i<maxDPC; i=i+1000) {
+        svg3.append("line").attr("x1", 0).attr("x2", svg3.attr("width")).attr("y1", svg3.attr("height")-yScale3(i)).attr("y2", svg3.attr("height")-yScale3(i)).style("stroke", "lightgrey");
+      }
+
+      diamondData.forEach(function(d, i) {
+        let c = Math.floor(xScale3(d["color_rating"]) + Math.random()*5 );
+        let p = Math.floor(svg3.attr("height")-yScale3(d["price"] / d["carat"]) + Math.random()*6 -3 );
+        svg3.append("circle").attr("cx", c).attr("cy", p).attr("r", 3).attr("opacity", 0.3).style("fill", "darkred");
+      });
+
+    }).catch(function(err) { throw new Error() });
+
+
+  </script>
+
+</body>
+</html>

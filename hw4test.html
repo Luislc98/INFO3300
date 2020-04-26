@@ -1,0 +1,286 @@
+<html><head>
+  <link href="https://fonts.googleapis.com/css?family=Lato:400,700|Raleway:400,700" rel="stylesheet">
+
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+
+  <style>
+
+  #scatterplot text {
+    text-anchor: middle;
+    alignment-baseline: middle;
+  }
+
+  .gridlines .domain {
+    stroke: none;
+  }
+  .gridlines line{
+    stroke: #bbb;
+  }
+
+  #line .line {
+    stroke-width: 2;
+    fill: none;
+  }
+
+  #line text {
+    font-family: arial;
+    font-size: 10px;
+  }
+
+  </style>
+
+</head>
+<body>
+  <svg height="500" width="800" id="scatterplot"></svg>
+
+  <svg height="400" width="400">
+    <g id="line">
+    </g>
+    <g id="background" style="stroke: #000; stroke-width: 2px; fill: none;">
+      <!--- Wall is 13 meters from pitcher. 20 meters tall and 4 meters thick.
+            Target is between 8 meters and 18 meters from the wall.  --->
+      <path d="M75 350 H 140 V 250 H 160 V 350 H 350"/>
+      <!--- 1 meter is 5px, so our pitcher is at (15,10) from the lower left corner in this drawing --->
+      <circle id="pitcher" cx="75" cy="350" r="5" style="fill: #EEF"/>
+      <!-- Our target is between (40,10) and (50,10) from the lower left corner in this drawing --->
+      <rect id="target" x="200" y="350" width="50" height="10" style="fill: #FDD"/>
+    </g>
+  </svg>
+
+
+  <script>
+
+  let svg = d3.select("#scatterplot");
+
+  d3.json("./blockbusters.json").then(function(data) {
+
+    // clean dataset
+    data = data.filter( d => {
+      return d.studio !== "NA" && d.studio !== "N/A" && d.studio.length != 0;
+    });
+    data.forEach( d => {
+      d['imdb'] = Number(d['imdb_rating']);
+      d['yr'] = Number(d['year']);
+      d['gross'] =  Number(d['worldwide_gross'].replace(/,/g,"").replace(/\$/g,""));
+    });
+
+    // scales & layers
+    let width = svg.attr("width");
+    let height = svg.attr("height");
+    let margin = { "top": 24, "right": 24, "bottom": 30, "left":50};
+    let chartWidth = width - margin["left"] - margin.right;
+    let chartHeight = height - margin["top"] - margin.bottom;
+
+    const yearMin = d3.min(data, d => d['yr']);
+    const yearMax = d3.max(data, d => d['yr']);
+    const yearScale = d3.scaleLinear().domain([yearMin, yearMax]).range([0, chartWidth]);
+
+    const grossMin = d3.min(data, d => d['gross']);
+    const grossMax = d3.max(data, d => d['gross']);
+    const grossScale = d3.scaleLog().domain([grossMin+1, grossMax]).range([chartHeight, 0]);
+
+    const imdbMin = d3.min(data, d => d['imdb']);
+    const imdbMax = d3.max(data, d => d['imdb']);
+    const imdbScale = d3.scaleLinear().domain([imdbMin, imdbMax]).range([3,8]);
+
+    const genreScale = d3.scaleOrdinal(d3.schemeCategory10);
+
+    // draw axes
+    let leftAxis = d3.axisLeft(grossScale).tickFormat(d3.format("$.0s"))
+    let leftGridlines = d3.axisLeft(grossScale).tickSize(-chartWidth-10).tickFormat("")
+    svg.append("g")
+      .attr("class", "y axis")
+      .attr("transform","translate("+(margin.left-10)+","+margin.top+")")
+      .call(leftAxis)
+      .selectAll("text")   // Hack to prevent label overlap
+      .style("text-anchor","end");
+    svg.append("g")
+      .attr("class", "y gridlines")
+      .attr("transform","translate("+(margin.left-10)+","+margin.top+")")
+      .call(leftGridlines);
+
+    let bottomAxis = d3.axisBottom(yearScale).tickFormat(d3.format("~f"));
+    let bottomGridlines = d3.axisBottom(yearScale).tickSize(-chartHeight-10).tickFormat("")
+    svg.append("g")
+      .attr("class", "y axis")
+      .attr("transform","translate("+margin.left+","+(chartHeight+margin.top+10)+")")
+      .call(bottomAxis);
+    svg.append("g")
+      .attr("class", "y gridlines")
+      .attr("transform","translate("+margin.left+","+(chartHeight+margin.top+10)+")")
+      .call(bottomGridlines);
+
+    let scatter = svg.append("g")
+          .attr("transform","translate("+margin.left+","+margin.top+")");
+
+    // populate circles
+    data.forEach( (d, i) => {
+
+      let circle = scatter.append("circle")
+          .attr("cx", yearScale(d['yr']))
+          .attr("cy", grossScale(d['gross']+1))
+          .attr("r", imdbScale(d['imdb']))
+          .attr("opacity", 0.8)
+          .style("fill", genreScale(d['Main_Genre']))
+          .attr("label", d["title"]);
+
+      // mouseover
+      circle.on("mouseover", function() {
+        //console.log(d3.select(this));
+        d3.select(this)
+          .transition().duration(200)
+          .attr("r",imdbScale(d['imdb'])*2)
+          .style("stroke","#000");
+
+        scatter.append("text")
+          .attr("class", "mouseoverLabel") // this works in this case, but is risky
+          .attr("x", yearScale(d['yr']) )
+          .attr("y", grossScale(d['gross']+1) - 25 )
+          .text(d['title']);
+      });
+
+      // clear mouseover
+      circle.on("mouseout", function() {
+        d3.select(this)
+          .transition().duration(200)
+          .attr("r",imdbScale(d['imdb']))
+          .style("stroke","none");
+        d3.selectAll(".mouseoverLabel").remove();
+      });
+
+    });
+
+  });
+
+
+
+
+
+
+
+
+  function trajectory(velocity, angle) {
+    let traj = [];
+    traj.push( {ground: 0,
+                x: 0,
+                y: 0,
+                xVelocity: velocity * Math.cos(angle),
+                yVelocity: velocity * Math.sin(angle),
+                xAcceleration: 0,
+                yAcceleration: -3.71 / 10 } );
+    do {
+      let last = traj[traj.length-1];
+      let xAcc = last.xAcceleration;
+      let yAcc = last.yAcceleration;
+
+      let xVel = last.xVelocity+xAcc;
+      let yVel = last.yVelocity+yAcc;
+
+      let nx = last.x + (xVel * 0.1);
+      let ny = last.y + (yVel * 0.1);
+
+      let grd = 0;
+      if (nx > 13 && nx < 17) {
+        grd = 20;
+      }
+
+      let nxt = { ground: grd,
+                  x: nx,
+                  y: ny,
+                  xVelocity: xVel,
+                  yVelocity: yVel,
+                  xAcceleration: xAcc,
+                  yAcceleration: yAcc };
+
+      traj.push(nxt)
+
+    }
+    while (traj[traj.length-1].ground < traj[traj.length-1].y)
+
+    return traj;
+  }
+
+  function trajectoryWithWind(velocity, angle, wind) {
+    let traj = [];
+    traj.push( {ground: 0,
+                x: 0,
+                y: 0,
+                xVelocity: velocity * Math.cos(angle),
+                yVelocity: velocity * Math.sin(angle),
+                xAcceleration: wind / 10,
+                yAcceleration: -3.71 / 10 } );
+    do {
+      let last = traj[traj.length-1];
+      let xAcc = last.xAcceleration;
+      let yAcc = last.yAcceleration;
+
+      let xVel = last.xVelocity+xAcc;
+      let yVel = last.yVelocity+yAcc;
+
+      let nx = last.x + (xVel * 0.1);
+      let ny = last.y + (yVel * 0.1);
+
+      let grd = 0;
+      if (nx > 13 && nx < 17) {
+        grd = 20;
+      }
+
+      let nxt = { ground: grd,
+                  x: nx,
+                  y: ny,
+                  xVelocity: xVel,
+                  yVelocity: yVel,
+                  xAcceleration: xAcc,
+                  yAcceleration: yAcc };
+
+      traj.push(nxt)
+
+    }
+    while (traj[traj.length-1].ground < traj[traj.length-1].y)
+
+    return traj;
+  }
+
+
+  let lineChart = d3.select("#line");
+  let xScale = d3.scaleLinear().domain([0,55]).range([75,350]);
+  let yScale = d3.scaleLinear().domain([0,20]).range([350,250]);
+
+  // debugging iteration
+  // trajectory(17,1.309).forEach( d => {  // 14 m/s, 75 degrees
+  //   lineChart.append("circle").attr("cx",xScale(d.x)).attr("cy",yScale(d.y)).attr("r",2);
+  // });
+
+
+  function plotTrajectory(traj, color) {
+    console.log(traj);
+    let line = d3.line()
+      .x(function(d) { return xScale(d.x); })
+      .y(function(d) { return yScale(d.y); })
+    lineChart.append("path")
+      .datum( traj )
+      .attr("class", "line")
+      .attr("d", line)
+      .attr("stroke",color);
+
+    let s = "MISS";
+    if (traj[traj.length-1].x >=25 && traj[traj.length-1].x <= 35) { s = "HIT"; }
+    let time = (traj.length)
+    let distance = Math.sqrt(((traj[0].x - traj[traj.length-1].x)*(traj[0].x - traj[traj.length-1].x)) + ((traj[0].y - traj[traj.length-1].y)*(traj[0].y - traj[traj.length-1].y)));
+    let str = s + ", " + (Math.round(time) / 10) + "s, " + (Math.round(distance*10) / 10) + "m";
+
+    lineChart.append("text")
+      .attr("x", xScale(traj[traj.length-1].x)+8)
+      .attr("y", yScale(traj[traj.length-1].y)-10)
+      .text(str);
+  }
+
+  plotTrajectory(trajectory(14,1.309),"blue");
+  plotTrajectory(trajectoryWithWind(13,1.39626,1),"red");
+
+
+
+  </script>
+
+</body>
+</html>

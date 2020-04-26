@@ -1,0 +1,500 @@
+<html> 
+<head> 
+<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<script src="https://d3js.org/topojson.v2.min.js"></script>
+</head>
+<body>
+
+<p id = "Part1" style = "width: 50%; font-family: sans-serif; font-size:32; color:gray"> The Relationship Between Median SAT Scores of Accepted Students and Median Income Ten Years After Matriculation from US Colleges </p>
+<div> 
+
+<svg id = "plot" width = "900" height = "600">
+<p id = "Legend" style= "font-family: Open Sans, sans-serif; font-size: 15;"> </p>
+<svg id = "costLegend" height = "100" width = "600" style="background: #fff; margin-top:30px">
+</svg>
+<svg id = "sizeLegend" height = "100" width = "300" style="background: #fff; margin-top:30px">
+</svg> </br> </br> </br>
+
+<p id="Part2" style = "width: 50%; font-family: sans-serif; font-size:32; color:gray">
+	Top and Bottom 50 Colleges with Highest and Lowest Median Income of Students Ten Years After Matriculation
+</p>
+
+<svg id = "mapLegend" height = "100" width = "600" style="background: #fff; margin-top:30px">
+</svg>
+
+<script>
+
+const svg = d3.select("svg#plot");
+const margin = {left: 70, bottom: 70};
+const width1 = svg.attr("width");
+const height1 = svg.attr("height");
+const chartWidth = width1 - margin.left;
+const chartHeight = height1 - margin.bottom;
+
+
+ 
+const requestData = async() => {
+
+
+	var collegeData  = await d3.csv("../dataset/2015collegedata.csv");
+
+	collegeData.forEach((d,i) => {
+
+    	d['adm_rate'] = Number(d['ADM_RATE']);
+	    d['median_earn'] = Number(d['MD_EARN_WNE_P10']);
+	    d['sat_verb'] = Number(d['SATVRMID']);
+	    d['sat_math'] =  Number(d['SATMTMID']);
+	    d['sat_writ'] = Number(d['SATWRMID']);
+	    d['institution'] = (d['INSTNM']);
+	    d['state'] = d['STABBR'];
+	    d['cost'] = Number(d['COSTT4_A']);
+	    d['zip'] = Number(d['ZIP']);
+});
+
+
+    collegeData = collegeData.filter(d => d['adm_rate'] >0 && d['median_earn'] >0 && d['sat_math']>0 && d['sat_writ']>0 && d['sat_verb']>0 && d['cost']>0);
+
+    collegeData.forEach((d,i) => {
+    	d['median_sat'] = d['sat_verb'] + d['sat_writ'] + d['sat_math']; });
+
+ 
+
+    collegeData = collegeData.sort(function(a, b) {
+
+
+    	return parseFloat(a.adm_rate) - parseFloat(b.adm_rate); 
+    });
+
+
+    let first = collegeData.slice(0,9);  
+	let middle1 = collegeData.slice(20, 59); 
+	let middle2 = collegeData.slice(75, 89);
+	let middle3 = collegeData.slice(100, 119); 
+	let middle4 = collegeData.slice(150, 160);
+	let middle5 = collegeData.slice(203, 212); 
+	let middle6 = collegeData.slice(350, 359);
+	let last = collegeData.slice(490, 500);
+
+
+	const costMin = d3.min(collegeData, d=> d['cost']);
+	const costMax = d3.max(collegeData, d=> d['cost']);
+
+
+	const satMin = d3.min(collegeData, d => d['median_sat']);
+	const satMax = d3.max(collegeData, d => d['median_sat']);
+
+	var satScale = d3.scaleLinear().domain([satMin, satMax + 200]).range([0, chartWidth]);
+
+	const earnMin = d3.min(collegeData, d => d['median_earn']);
+	const earnMax = d3.max(collegeData, d => d['median_earn']);
+
+
+	var earnScale = d3.scaleLinear().domain([0, earnMax]).range([chartHeight, 0]);
+
+	const admMin = d3.min(collegeData, d => d['adm_rate']);
+	const admMax = d3.max(collegeData, d => d['adm_rate']);
+
+	var admScale = d3.scaleLinear().domain([admMin, admMax]).range([5,10]);
+
+	var color_sequential = d3.scaleSequential(d3.interpolateOrRd).domain([costMin, costMax]);
+
+	let xAxis =  d3.axisBottom(satScale);
+	let yAxis = d3.axisLeft(earnScale);
+
+	svg.append("g")
+	   .attr("class", "y axis")
+	   .attr("transform", "translate(" + margin.left + "," + 0 + ")")
+	   .call(yAxis);
+
+	svg.append("text")
+		 .attr("x", -250)
+		 .attr("y", 15)
+		 .text("Median Income Ten Years After Matriculation")
+		 .attr("transform","rotate(-90)")
+		 .attr("font-family", "sans-serif")
+		 .attr("fill", "grey")
+		 .attr("text-anchor","middle");
+
+	svg.append("g")
+	   .attr("class", "x axis")
+	   .attr("transform", "translate(" + margin.left + "," + chartHeight + ")")
+	   .call(xAxis);
+
+	svg.append("text")
+		 	 .attr("x", 425)
+		 	 .attr("y", 590)
+		 	 .text("Accepted Students Median SAT Scores (2400)")
+		 	 .attr("text-anchor","middle")
+		 	 .attr("font-family", "sans-serif")
+		 	 .attr("fill", "grey");
+
+
+
+	first.forEach((d, i) => {
+
+	  let cost = color_sequential(d['cost']);
+
+		let circle = svg.append("circle")
+	                          .attr("cx", satScale(d['median_sat']))
+	                          .attr("cy", earnScale(d['median_earn']))
+	                          .attr("r", admScale(2.5*d['adm_rate']))
+	                          .style("fill", cost);
+
+	});
+
+
+
+	middle1.forEach((d, i) => {
+
+	   let cost = color_sequential(d['cost']);
+
+		let circle = svg.append("circle")
+	                          .attr("cx", satScale(d['median_sat']))
+	                          .attr("cy", earnScale(d['median_earn']))
+	                          .attr("r", admScale(2.5*d['adm_rate']))
+	                          .style("fill", cost);
+
+
+
+	});
+
+	middle2.forEach((d, i) => {
+
+	   let cost = color_sequential(d['cost']);
+
+		let circle = svg.append("circle")
+	                          .attr("cx", satScale(d['median_sat']))
+	                          .attr("cy", earnScale(d['median_earn']))
+	                          .attr("r", admScale(2.5*d['adm_rate']))
+	                          .style("fill", cost);
+
+
+
+	}); 
+
+
+	middle3.forEach((d, i) => {
+
+	  let cost = color_sequential(d['cost']);
+
+		let circle = svg.append("circle")
+	                          .attr("cx", satScale(d['median_sat']))
+	                          .attr("cy", earnScale(d['median_earn']))
+	                          .attr("r", admScale(2.5*d['adm_rate']))
+	                          .style("fill", cost);
+
+
+
+
+
+	});
+
+	middle4.forEach((d, i) => {
+
+	  let cost = color_sequential(d['cost']);
+
+		let circle = svg.append("circle")
+	                          .attr("cx", satScale(d['median_sat']))
+	                          .attr("cy", earnScale(d['median_earn']))
+	                          .attr("r", admScale(2.5*d['adm_rate']))
+	                          .style("fill", cost);
+
+
+
+	});
+
+
+	middle5.forEach((d, i) => {
+
+	   let cost = color_sequential(d['cost']);
+
+		let circle = svg.append("circle")
+	                          .attr("cx", satScale(d['median_sat']))
+	                          .attr("cy", earnScale(d['median_earn']))
+	                          .attr("r", admScale(2.5*d['adm_rate']))
+	                          .style("fill", cost);
+
+
+
+	});
+
+
+
+	middle6.forEach((d, i) => {
+
+	   let cost = color_sequential(d['cost']);
+
+		let circle = svg.append("circle")
+	                          .attr("cx", satScale(d['median_sat']))
+	                          .attr("cy", earnScale(d['median_earn']))
+	                          .attr("r", admScale(2.5*d['adm_rate']))
+	                          .style("fill", cost);
+
+
+	});
+
+	last.forEach((d, i) => {
+
+	  let cost = color_sequential(d['cost']);
+
+		let circle = svg.append("circle")
+	                          .attr("cx", satScale(d['median_sat']))
+	                          .attr("cy", earnScale(d['median_earn']))
+	                          .attr("r", admScale(2.5*d['adm_rate']))
+	                          .style("fill", cost);
+	});
+
+//The code for legend was based off of lecture notes from March 1st
+	let legend = d3.select("#costLegend");
+	const legendWidth = legend.attr("width");
+	const legendHeight = legend.attr("height");
+	const barHeight = 60;
+	const stepSize = 4; 
+	const pixelScale = d3.scaleLinear().domain([0,legendWidth-40]).range([costMin-1,costMax+1]); 
+	const barScale = d3.scaleLinear().domain([costMin-1, costMax+1]).range([0,legendWidth-40]);
+	const barAxis = d3.axisBottom(barScale);
+	legend.append("g")
+		.attr("class", "colorbar axis")
+		.attr("transform","translate("+(20)+","+(barHeight+5)+")")
+		.call(barAxis);
+
+	legend.append("text")
+				.attr("dx", 200)
+				.attr("dy", 98)
+				.text("Annual Cost of Tuition ($)")
+				.style("fill", "grey")
+				.attr("font-family", "Open Sans", "sans-serif")
+				.style("font-size", 14);
+
+	let bar = legend.append("g").attr("transform","translate("+(20)+","+(0)+")")
+	for (let i=0; i<legendWidth-40; i=i+stepSize) {
+		bar.append("rect")
+			.attr("x", i)
+			.attr("y", 0)
+			.attr("width", stepSize)
+			.attr("height",barHeight)
+			.style("fill", color_sequential( pixelScale(i) )); 
+	};
+
+
+	let sizeLegend = d3.select("#sizeLegend");
+	const sizeWidth = sizeLegend.attr("width");
+	const sizeHeight = sizeLegend.attr("height");
+	sizeLegend.append("circle")
+						.attr("cx", 100)
+						.attr("cy", 50)
+						.attr("r", admScale(2.5*0.0509))
+						.style("fill", "maroon");
+
+	sizeLegend.append("line")
+						.attr("x1", 100)
+						.attr("x2", 100)
+						.attr("y1", 50)
+						.attr("y2", 30)
+						.style("stroke", "grey");
+
+	sizeLegend.append("text")
+						.attr("dx", 100)
+						.attr("dy", 30)
+						.text("5%")
+						.style("fill", "grey")
+						.attr("font-family", "Open Sans", "sans-serif")
+						.style("font-size", 12);
+
+	sizeLegend.append("circle")
+						.attr("cx", 200)
+						.attr("cy", 50)
+						.attr("r", admScale(2.5))
+						.style("fill", "maroon");
+
+	sizeLegend.append("line")
+						.attr("x1", 200)
+						.attr("x2", 200)
+						.attr("y1", 50)
+						.attr("y2", 10)
+						.style("stroke", "grey");
+
+	sizeLegend.append("text")
+						.attr("dx", 200)
+						.attr("dy", 10)
+						.text("100%")
+						.style("fill", "grey")
+						.attr("font-family", "Open Sans", "sans-serif")
+						.style("font-size", 12);
+
+	sizeLegend.append("text")
+						.attr("dx", 150)
+						.attr("dy", 90)
+						.text("Admission Acceptance Rate")
+						.style("fill", "grey")
+						.style("text-anchor", "middle")
+						.attr("font-family", "Open Sans", "sans-serif")
+						.style("font-size", 14);
+
+
+
+
+	const zipData = await d3.csv("../dataset/zipcodes.csv");
+
+    collegeData.forEach((d,i) => {
+
+    	let longitude = 0; 
+    	let latitude = 0;
+    	let zip = d['zip'].toString();
+
+    	zipData.forEach((d2,i) => {
+
+    		if (zip.substring(0,6) == d2['Zipcode'].toString()) {
+
+    			longitude = Number(d2['Long']);
+				latitude = Number(d2['Lat']);
+			    d['long'] = longitude;
+			    d['lat'] = latitude;
+	
+    		};
+
+    	
+
+    	});
+
+
+    });
+
+ //The code for the map was based off of lecture notes from March 1st 
+	var map = d3.select("body").append("svg").attr("width", width1).attr("height", height1);
+
+	var usData = await d3.json("../dataset/us.json");
+
+	var states = topojson.feature(usData, usData.objects.states);
+	var projection = d3.geoAlbersUsa().fitSize([width1, height1], states);
+	var path = d3.geoPath().projection(projection);
+
+	collegeData = collegeData.filter(d => projection([d['long'],d['lat']])!=null);
+
+
+	map.selectAll("path").data(states.features)
+		                 .enter()
+		                 .append("path")
+					     .attr("class","state")
+					     .attr("d", path)
+					     .attr("note", d => d.id);
+
+	map.append("path")
+		.datum(topojson.mesh(usData, usData.objects.states))
+		.attr("class","outline")
+		.attr("d", path);
+     
+
+  
+    collegeData = collegeData.sort(function(a, b) {
+
+
+    	return parseFloat(a.median_earn) - parseFloat(b.median_earn); 
+    });
+
+    let top50 = collegeData.slice(0,49);
+    let bottom50 = collegeData.slice(272,322);
+
+
+    top50.forEach((d,i) => {
+
+    var coordinates = projection([d['long'], d['lat']]);
+
+
+    map.append("circle")
+		   .attr("cx", coordinates[0])
+		   .attr("cy", coordinates[1])
+		   .attr("r", 0.0002*d['median_earn'])
+		   .attr("fill", "blue")
+		   .attr("opacity",  0.3);
+
+		
+
+
+   });
+
+    bottom50.forEach((d,i) => {
+
+    var coordinates = projection([d['long'], d['lat']]);
+
+
+    map.append("circle")
+		   .attr("cx", coordinates[0])
+		   .attr("cy", coordinates[1])
+		   .attr("r", 0.0002*d['median_earn'])
+		   .attr("fill", "red")
+		   .attr("opacity",  0.3);
+
+		
+
+
+   });
+
+	let mapLegend = d3.select("#mapLegend");
+	const mapsizeWidth = mapLegend.attr("width");
+	const mapsizeHeight = mapLegend.attr("height");
+	mapLegend.append("circle")
+						.attr("cx", 100)
+						.attr("cy", 50)
+						.attr("r", 0.0002*50000)
+						.attr("opacity",  0.8)
+						.style("fill", "blue");
+
+	mapLegend.append("line")
+						.attr("x1", 100)
+						.attr("x2", 100)
+						.attr("y1", 50)
+						.attr("y2", 30)
+						.style("stroke", "grey");
+
+	mapLegend.append("text")
+						.attr("dx", 100)
+						.attr("dy", 30)
+						.text("Bottom 50 school")
+						.style("fill", "grey")
+						.attr("font-family", "Open Sans", "sans-serif")
+						.style("font-size", 11);
+
+	mapLegend.append("circle")
+						.attr("cx", 200)
+						.attr("cy", 50)
+						.attr("r",0.0002*100000)
+						.attr("opacity",  0.8)
+						.style("fill", "red");
+
+	mapLegend.append("line")
+						.attr("x1", 200)
+						.attr("x2", 200)
+						.attr("y1", 50)
+						.attr("y2", 10)
+						.style("stroke", "grey");
+
+	mapLegend.append("text")
+						.attr("dx", 200)
+						.attr("dy", 10)
+						.text("Top 50 school")
+						.style("fill", "grey")
+						.attr("font-family", "Open Sans", "sans-serif")
+						.style("font-size", 11);
+
+	mapLegend.append("text")
+						.attr("dx", 150)
+						.attr("dy", 90)
+						.text("Median Earnings After 10 years")
+						.style("fill", "grey")
+						.style("text-anchor", "middle")
+						.attr("font-family", "Open Sans", "sans-serif")
+						.style("font-size", 14);
+
+
+
+
+};
+
+    requestData();
+
+</script>
+</div>
+</body>
+

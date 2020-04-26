@@ -1,0 +1,148 @@
+<html lang="en" dir="ltr">
+
+<head>
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+</head>
+
+<body>
+  <svg width="800" height="600" id="svg-container">
+
+  </svg>
+  <script>
+    let svg = d3.select("svg#svg-container");
+    current_coordinates = [0, 0];
+    is_dragging = false;
+    //CONSTANTS
+    let dimensions = {
+      width: 800,
+      height: 600
+    };
+    let margin = {
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0
+    };
+    let chart = {
+      width: dimensions.width - margin.left - margin.right,
+      height: dimensions.height - margin.top - margin.bottom
+    };
+
+    //END CONSTANTS
+
+    function generateSelector(radius, labels, sides, callback, dimensions, color) {
+      let circle_radius = 5;
+      let points = [];
+      let center_points = [];
+      let gridlines = [
+        [],
+        [],
+        [],
+        []
+      ];
+
+      let point_generator = (list, percent_radius) => {
+        for (let j = 0; j < sides; j++) {
+          let angle_of_rotation = j * 2 * Math.PI / sides + 3 * Math.PI / 2; //get proper orientation
+          list.push({
+            x: Math.cos(angle_of_rotation) * radius * percent_radius + dimensions.width / 2,
+            y: Math.sin(angle_of_rotation) * radius * percent_radius + dimensions.height / 2
+          })
+
+        }
+      }
+
+      //generate many different pentagons
+      point_generator(points, 1);
+      point_generator(center_points, 0.10);
+      point_generator(gridlines[0], 0.2);
+      point_generator(gridlines[1], 0.4);
+      point_generator(gridlines[2], 0.6);
+      point_generator(gridlines[3], 0.8);
+
+      generatePath(points, color, "outer")
+      generatePath(center_points, color, "inner", true)
+
+      points.forEach(({
+        x,
+        y
+      }, i) => {
+        svg.append('circle')
+          .attr("cx", x)
+          .attr("cy", y)
+          .attr("r", circle_radius)
+          .style("fill", color)
+
+      })
+      center_points.forEach(({
+        x,
+        y
+      }, i) => {
+
+        let m = (points[i].y - y) / (points[i].x - x);
+        let line = x_input => m * x_input + y;
+
+        svg.append('circle')
+          .attr("cx", x)
+          .attr("cy", y)
+          .attr("r", circle_radius)
+          .attr("id", "inner_circle" + i)
+          .style("fill", color)
+          .call(d3.drag()
+            .on("start", function() {})
+            .on("drag", function() {
+
+              current_coordinates = d3.mouse(this);
+
+              d3.select(this)
+                .attr("cx", current_coordinates[0] - chart.width / 2)
+                .attr("cy", line(current_coordinates[0]));
+
+              center_points[i].x = current_coordinates[0] + x - chart.width / 2;
+              center_points[i].y = line(current_coordinates[0]) + chart.height / 2;
+              updatePath(center_points, "inner")
+            })
+            .on("end", function() {})
+          )
+
+
+      })
+
+      gridlines.forEach((d, i) => {
+        console.log(d);
+        generatePath(d, "#ededed80", "grid");
+      })
+    }
+    /*
+      Points: array of {x: _, y: _}
+      Color: hex string
+      Fill: boolean to say whether or not it should be filled
+    */
+    function generatePath(points, color, id, fill) {
+      let line = d3.line().x(d => d.x).y(d => d.y)
+
+      let wrapped_points = points.concat([points[0]]);
+
+      svg.append("path")
+        .attr("d", line(wrapped_points))
+        .attr("id", id)
+        .attr("fill", fill ? color + "70" : "none")
+        .attr("stroke-width", 2)
+        .attr("stroke", color)
+    }
+
+    function updatePath(new_points, id) {
+      new_points = new_points.concat([new_points[0]]);
+      let line = d3.line().x(d => d.x).y(d => d.y)
+      d3.select("path#" + id)
+        .attr("d", line(new_points));
+    }
+
+    generateSelector(100, [], 5, () => {}, {
+      width: 400,
+      height: 400
+    }, "#f94545")
+  </script>
+</body>
+
+</html>

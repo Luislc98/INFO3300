@@ -1,0 +1,76 @@
+
+<!--- Copy this segment of code into your homework --->
+
+<p>Problem 2:</p>
+
+<svg id="container" width="800" height="437">
+ <foreignObject width="800" height="437" y="0" x="0">
+   <!--- Foreign object allows us to nest HTML inside an SVG --->
+   <!--- It can get pretty hacky, so use at your own risk --->
+   <canvas id="painting" width="800" height="437"></canvas>
+ </foreignObject>
+ <g id="brush"></g>
+</svg>
+<br/>
+<svg width="800" height="100">
+  <rect id="color" x="0" y="0" width="800" height="100" fill="white" />
+  <text id="label" x="20" y="80" />
+</svg>
+
+<script>
+
+// Some helper variables for you to use -- do not modify or helper functions will fail
+var canvas = d3.select("#painting");
+var gfxContext = canvas.node().getContext("2d");
+var imgWidth = canvas.node().width;
+var imgHeight = canvas.node().height;
+
+var img = new Image;
+img.src = "nighthawks.png"
+img.onload = imgLoaded;
+
+function imgLoaded() {
+  gfxContext.drawImage(this, 0, 0); // Paint image to canvas
+
+  // pixels is a 2-d array containing RGB data for the whole image
+  //  for example:  pixels[155][22] will tell give you a dict for the RGB values at point x=22, y=155
+  //              (note that y position comes first, then x position)
+  //              R, G, and B values start at 0 and run to 255
+  let pixels = getAllPixels();
+
+  // ----- All of your code for this problem must go between these comments -----
+  // Make use of the g#brush group inside of the SVG element for placing your brush
+  // Make use of the #color and #label elements for your average color and text label
+
+
+
+
+
+  // ----- All of your code for this problem must go between these comments -----
+
+}
+
+function getAllPixels() {
+
+  let gfxData = gfxContext.getImageData(0,0,imgWidth,imgHeight).data;
+  let processedData = [];
+  for (let i=0; i<gfxData.length; i=i+4) { // contains stripe of RGBARGBARGBA
+    let xCoord = Math.floor(i/4) % imgWidth;
+    let yCoord = Math.floor(i/(imgWidth*4))
+    if (xCoord === 0) { processedData.push( [] ); }
+    processedData[processedData.length-1].push( {
+      x: xCoord,
+      y: yCoord,
+      r: gfxData[i],
+      g: gfxData[i+1],
+      b: gfxData[i+2]
+    } );
+  }
+  return processedData;
+
+}
+
+
+</script>
+
+<!--- End segment of code for your homework --->

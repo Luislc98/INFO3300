@@ -1,0 +1,177 @@
+<html lang="en" dir="ltr">
+
+<head>
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <script src="https://d3js.org/topojson.v2.min.js"></script>
+  <style>
+    .country {stroke: none;
+     fill:lightgrey;
+    
+    
+    
+            }
+    .outline{
+        stroke: black;
+        stroke-width: 1px;
+        fill: none;
+    }  
+    .graticule {
+        fill:none;
+        stroke: lightgrey;    
+        
+    }    
+    
+    
+    </style>
+</head>
+
+<body>
+  <svg width="800" height="600" id="svg-container">
+
+  </svg>
+  <script>
+    let svg = d3.select("svg#svg-container");
+    //CONSTANTS
+    let dimensions = {
+      width: 800,
+      height: 600
+    };
+    let margin = {
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0
+    };
+    let chart = {
+      width: dimensions.width - margin.left - margin.right,
+      height: dimensions.height - margin.top - margin.bottom
+    };
+
+    const width = svg.attr("width");
+    const height = svg.attr("height");
+    //const margin = { top: 20, right: 20, bottom: 20, left:20};
+    const mapWidth = width - margin.left - margin.right;
+    const mapHeight = height - margin.top - margin.bottom;
+    const map = svg.append("g")
+                  .attr("transform","translate("+margin.left+","+margin.top+")");
+
+
+
+    let data = {};
+    //END CONSTANTS
+
+    //load datafiles
+    async function loadData() {
+      let country_demographics_raw = await d3.csv('countries_of_the_world.csv', d3.autoType);
+      let happiness2017_raw = await d3.csv('./world-happiness-report/2017.csv', d3.autoType);
+
+      data = cleanData(happiness2017_raw, country_demographics_raw);
+
+      generateMap();
+
+    }
+    //load topojson world and make map
+    function generateMap() {
+      const requestData = async () => {
+        const world=  await d3.json("world_110m.json");
+        
+        console.log(world);
+        var countries = topojson.feature(world, world.objects.countries);
+        console.log("pie");
+        var countriesMesh = topojson.mesh(world, world.objects.countries);
+
+          var projection = d3.geoEqualEarth()
+          .fitSize([mapWidth,mapHeight],countries);
+        var path = d3.geoPath().projection(projection);
+        map.append("path") // Add a single path to your SVG canvas
+        .attr( "class", "graticule" )
+ // with the class "graticule" to use our CSS style
+        .attr( "d", path( d3.geoGraticule10() ) );
+ // and call your path generator on the output of d3’s
+ // built-in d3.geoGraticule10 function to set "d"
+        map.selectAll("path").data(countries.features)
+        .enter()
+        .append("path")
+        .attr("class","country")
+        .attr("d", path);
+        // .attr("note", d => d.id);  // We used this for debugging
+        map.append("path")
+      .datum(countriesMesh)
+      .attr("class","outline")
+      .attr("d", path);
+
+          };
+    requestData();
+      //TODO
+    }
+
+    //
+    function cleanData(dataset1, dataset2) {
+      let country_demographics = {};
+      //keys that need to be cleaned up (turning string to float)
+      let string_float_keys = ["Arable (%)", "Birthrate", "Crops (%)",
+        "Deathrate",
+        "Infant mortality (per 1000 births)", "Literacy (%)",
+        "Net migration"
+      ];
+      let string_keys = ["Happiness.Score", "Happiness.Rank"];
+      //other keys I want
+      let other_keys = ["GDP ($ per capita)", "Area (sq. mi.)", "Population"];
+
+      //filter data
+
+      dataset1.forEach((d, i) => {
+        country_demographics[d.Country] = {};
+        let country = country_demographics[d.Country];
+
+        string_keys.forEach((key, keyIndex) => {
+          country[key] = d[key];
+        })
+
+      })
+
+      dataset2.forEach((d, i) => {
+        let parsed_country = d.Country.trim();
+
+        if (!country_demographics[parsed_country]) {
+          return; // don't do anything if country doesn't have a happiness rating
+        }
+
+        //initialize country object
+        let country = country_demographics[parsed_country];
+
+
+        string_float_keys.forEach((key, keyIndex) => {
+          if (d[key] == null) {
+            delete country_demographics[parsed_country];
+            return;
+          }
+
+          country[key] = parseFloatWithComma(d[key]);
+        })
+
+        other_keys.forEach((key, keyIndex) => {
+          country[key] = d[key];
+        })
+      })
+      return country_demographics;
+    }
+
+    //returns a float that is represented by a string where the decimal point
+    //is a comma
+    function parseFloatWithComma(str) {
+
+      if (typeof str === "number") {
+        return str;
+      }
+      return parseFloat(str.replace(",", "."));
+    }
+
+
+
+    loadData();
+  </script>
+
+</body>
+
+</html>

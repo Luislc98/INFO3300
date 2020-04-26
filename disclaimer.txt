@@ -1,0 +1,3 @@
+DISCLAIMER:
+
+The included test file is meant as a demonstration of the general patterns or algorithms necessary to complete the coding portion of the homework. The file may not precisely fulfill all requirements provided in the problem set, and is not intended to be a benchmark against which student assignments are graded. Regrade requests comparing submissions to test files will be rejected. Student assignments are graded using a rubric based on the problem set document.
